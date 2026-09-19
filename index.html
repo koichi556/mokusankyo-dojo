@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>木三共 実務道場</title>
+<style>
+  :root {
+    --paper: #f6f3ea;
+    --paper-line: #dcd5c2;
+    --ink: #1f2e3d;
+    --ink-soft: #4a5a6a;
+    --navy: #1f3a5f;
+    --navy-deep: #142438;
+    --accent: #b8420f;
+    --accent-soft: #f0ddd0;
+    --teal: #3d6b64;
+    --teal-soft: #dfeae7;
+    --card-bg: #ffffff;
+    --shadow: 0 1px 0 rgba(31,46,61,.06);
+    --mono-num-color: #1f3a5f;
+    --good: #2f7a4f;
+    --good-soft: #e2f3e7;
+    --bad: #b8420f;
+    --bad-soft: #f7e4da;
+  }
+  :root[data-theme="dark"] {
+    --paper: #10161f;
+    --paper-line: #253347;
+    --ink: #e8ecf1;
+    --ink-soft: #9fb0c2;
+    --navy: #7ea6d8;
+    --navy-deep: #cfe0f2;
+    --accent: #e8a582;
+    --accent-soft: #2c1c14;
+    --teal: #7fb8ae;
+    --teal-soft: #16302b;
+    --card-bg: #161f2b;
+    --shadow: 0 1px 0 rgba(0,0,0,.4);
+    --mono-num-color: #9dc0e8;
+    --good: #7fd39a;
+    --good-soft: #103322;
+    --bad: #e8a582;
+    --bad-soft: #3a1c12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #10161f; --paper-line: #253347; --ink: #e8ecf1; --ink-soft: #9fb0c2;
+      --navy: #7ea6d8; --navy-deep: #cfe0f2; --accent: #e8a582; --accent-soft: #2c1c14;
+      --teal: #7fb8ae; --teal-soft: #16302b; --card-bg: #161f2b; --shadow: 0 1px 0 rgba(0,0,0,.4);
+      --mono-num-color: #9dc0e8; --good: #7fd39a; --good-soft: #103322; --bad: #e8a582; --bad-soft: #3a1c12;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif;
+    line-height: 1.7;
+  }
+  body {
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: -1px -1px;
+    background-attachment: local;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  .titleblock {
+    border-bottom: 3px solid var(--navy);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+  }
+  .titleblock h1 { margin: 4px 0 4px; font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.9rem); font-weight: 800; text-wrap: balance; }
+  .titleblock .sub { font-size: .85rem; color: var(--ink-soft); }
+  .titleblock .kicker { font-size: .72rem; letter-spacing: .1em; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+
+  .stat-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card-bg); border: 1px solid var(--paper-line); border-radius: 10px;
+    padding: 10px 14px; margin-bottom: 16px; box-shadow: var(--shadow);
+    font-size: .82rem; flex-wrap: wrap;
+  }
+  .stat-bar .lv-badge {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: .9rem; flex-shrink: 0;
+  }
+  .stat-bar .xp-track { flex: 1 1 120px; min-width: 90px; height: 8px; background: var(--paper-line); border-radius: 999px; overflow: hidden; }
+  .stat-bar .xp-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--navy)); border-radius: 999px; transition: width .4s ease; }
+  .stat-bar .streak { display: flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 700; white-space: nowrap; }
+
+  .mode-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .mode-tabs button {
+    flex: 1; padding: 10px 8px; border-radius: 8px; border: 1.5px solid var(--paper-line);
+    background: var(--card-bg); color: var(--ink-soft); font-size: .88rem; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .mode-tabs button.active { border-color: var(--navy); color: var(--navy); background: color-mix(in srgb, var(--navy) 8%, var(--card-bg)); }
+  :root[data-theme="dark"] .mode-tabs button.active,
+  @media (prefers-color-scheme: dark) { .mode-tabs button.active { color: var(--navy); } }
+
+  .panel { background: var(--card-bg); border: 1px solid var(--paper-line); border-radius: 12px; padding: 18px 18px 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+
+  .q-progress { font-size: .76rem; color: var(--ink-soft); margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+  .q-text { font-size: 1.02rem; font-weight: 700; margin: 0 0 16px; text-wrap: balance; }
+  .opt-list { display: flex; flex-direction: column; gap: 8px; }
+  .opt-btn {
+    text-align: left; padding: 12px 14px; border-radius: 8px; border: 1.5px solid var(--paper-line);
+    background: var(--paper); color: var(--ink); font-size: .92rem; cursor: pointer; font-family: inherit;
+    transition: border-color .15s, background .15s;
+  }
+  .opt-btn:hover { border-color: var(--navy); }
+  .opt-btn.correct { border-color: var(--good); background: var(--good-soft); color: var(--good); font-weight: 700; }
+  .opt-btn.wrong { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); font-weight: 700; }
+  .opt-btn:disabled { cursor: default; }
+
+  .feedback { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: .86rem; }
+  .feedback.correct { background: var(--good-soft); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 40%, transparent); }
+  .feedback.wrong { background: var(--bad-soft); color: var(--bad); border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent); }
+  .feedback b { display: block; margin-bottom: 4px; }
+
+  .next-btn, .primary-btn {
+    margin-top: 14px; width: 100%; padding: 12px; border-radius: 8px; border: none;
+    background: var(--navy); color: #fff; font-size: .92rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .primary-btn.accent { background: var(--accent); }
+
+  /* --- 敷地診断モード --- */
+  .site-card {
+    background: linear-gradient(135deg, var(--accent-soft), transparent);
+    border: 1.5px solid var(--accent); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px;
+  }
+  .site-card .tag { display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.06em; color: var(--accent); border:1px solid var(--accent); border-radius:999px; padding:2px 9px; margin-bottom:8px; }
+  .site-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; font-size: .84rem; }
+  .site-grid dt { color: var(--ink-soft); font-size: .74rem; }
+  .site-grid dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .num-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .num-input-row input[type=number] {
+    flex: 1; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--paper-line);
+    background: var(--paper); color: var(--ink); font-size: 1rem; font-family: inherit; font-variant-numeric: tabular-nums;
+  }
+  .num-input-row input[type=number]:focus { outline: none; border-color: var(--navy); }
+  .num-unit { font-size: .82rem; color: var(--ink-soft); white-space: nowrap; }
+  .submit-btn { margin-top: 10px; width: 100%; padding: 11px; border-radius: 8px; border: none; background: var(--teal); color: #fff; font-weight: 700; font-size: .9rem; cursor: pointer; font-family: inherit; }
+
+  .calc-explain { font-size: .82rem; color: var(--ink-soft); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--paper-line); }
+  .calc-explain code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: color-mix(in srgb, var(--navy) 8%, transparent); padding: 1px 5px; border-radius: 4px; }
+
+  .site-summary { font-size: .84rem; }
+  .site-summary table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .site-summary th, .site-summary td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--paper-line); font-size: .82rem; }
+  .site-summary th { color: var(--ink-soft); font-weight: 600; font-size: .74rem; }
+  .site-summary .ok { color: var(--good); font-weight: 700; }
+  .site-summary .ng { color: var(--bad); font-weight: 700; }
+
+  .disclaimer {
+    font-size: .76rem; color: var(--ink-soft); background: var(--card-bg); border: 1px dashed var(--paper-line);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+  }
+
+  .footer-note { font-size: .76rem; color: var(--ink-soft); text-align: center; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--paper-line); }
+  .footer-note button { font-size: .74rem; color: var(--ink-soft); background: none; border: 1px solid var(--paper-line); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="titleblock">
+    <div class="kicker">Study &amp; Simulator — 意匠図チェックバック実務</div>
+    <h1>木三共 実務道場</h1>
+    <div class="sub">木造3階建て共同住宅(木三共)の法規知識クイズ ＋ 架空敷地の建蔽率・容積率・木三共適用診断シミュレーター</div>
+  </div>
+
+  <div class="stat-bar">
+    <div class="lv-badge" id="lv-badge">1</div>
+    <div style="flex:1 1 160px; min-width:120px;">
+      <div style="font-size:.72rem; color:var(--ink-soft); margin-bottom:3px;">Lv.<span id="lv-num">1</span> ・ 次のレベルまで あと<span id="xp-remain">100</span> XP</div>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+    <div class="streak">🔥 <span id="streak-num">0</span></div>
+  </div>
+
+  <div class="mode-tabs">
+    <button id="tab-quiz" class="active">📖 知識クイズ</button>
+    <button id="tab-sim">📐 敷地診断</button>
+  </div>
+
+  <!-- ===== 知識クイズ ===== -->
+  <div id="quiz-mode">
+    <div class="panel">
+      <div class="q-progress" id="quiz-progress">問題 1 / 34 ・ 正解 0</div>
+      <p class="q-text" id="quiz-q"></p>
+      <div class="opt-list" id="quiz-opts"></div>
+      <div id="quiz-feedback"></div>
+      <button class="next-btn" id="quiz-next" style="display:none;">次の問題へ →</button>
+    </div>
+  </div>
+
+  <!-- ===== 敷地診断シミュレーター ===== -->
+  <div id="sim-mode" style="display:none;">
+    <div class="disclaimer">⚠ このシミュレーターは学習用です。架空の敷地条件・簡略化した判定ロジックで計算しています。実際の判定は必ず「建築申請memo」原本・行政窓口で確認してください。</div>
+    <div id="sim-body"></div>
+  </div>
+
+  <div class="footer-note">
+    全34問(知識クイズ)＋敷地診断は無限に生成 ・ 進捗はこの端末のブラウザに保存されます<br>
+    <button id="reset-btn">進捗をリセット</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ========== データ:知識クイズ ========== */
+  var QUIZ_QUESTIONS = [
+    { q:"共同住宅を3階建てにする場合、原則として求められる建築物の性能は?", options:["耐火建築物","準耐火建築物(45分)","簡易耐火建築物","制限なし"], correct:0,
+      explain:"共同住宅は特殊建築物にあたり、3階建てにすると原則は耐火建築物が必要です。(建築基準法27条)" },
+    { q:"建築基準法27条ただし書きにより、「木三共仕様(1時間準耐火建築物)」が耐火建築物の代わりに使えるのはどの地域?", options:["防火地域以外","防火地域内のみ","準防火地域内のみ","全地域で無条件に使える"], correct:0,
+      explain:"防火地域以外であれば「1時間準耐火建築物」を耐火建築物の代わりとして扱うことができます(建築基準法27条ただし書き)。" },
+    { q:"共同住宅(就寝利用施設)に求められる準耐火性能は、一般的な準耐火建築物の45分と比べてどうか?", options:["より厳しい1時間の準耐火性能が必要","同じ45分でよい","より緩い30分でよい","準耐火性能は不要"], correct:0,
+      explain:"就寝利用施設である共同住宅は、一般的な準耐火建築物(45分)より厳しい1時間の準耐火性能が求められます。" },
+    { q:"木三共仕様が使える「4つの条件」(平成27年国交省告示第255号)に含まれないものは?", options:["非常用エレベーターの設置","1時間準耐火構造","避難上有効なバルコニーの設置","敷地内通路の確保"], correct:0,
+      explain:"4条件は①主要構造部の耐火性能(1時間準耐火構造)②避難上有効なバルコニー③敷地内通路④防火設備です。非常用エレベーターは含まれません。" },
+    { q:"木三共4条件のうち、実務では土地の形状によって最もネックになりやすいとされているのは?", options:["敷地内通路の確保","1時間準耐火構造","バルコニーの設置","防火設備の設置"], correct:0,
+      explain:"敷地内通路の確保が土地の形状によって一番ネックになりやすい、とされています。ボリュームチェックの段階から織り込んで検討する必要があります。" },
+    { q:"防火地域外・準防火地域外で木三共仕様(4条件)を使える延床面積の目安は?", options:["1,500㎡以下(原則3,000㎡以下)","500㎡以下","5,000㎡以下","面積の制限なし"], correct:0,
+      explain:"防火地域外・準防火地域外では延床1,500㎡以下(原則3,000㎡以下)で耐火建築物を回避できます。" },
+    { q:"準防火地域内で延床面積が500㎡を超える場合、木三共で必要になる構造は?", options:["イ-2構造またはロ-2構造","1時間準耐火構造のみでよい","耐火建築物が絶対条件","規定なし"], correct:0,
+      explain:"準防火地域内で延床500㎡超の場合、イ-2構造(45分準耐火)またはロ-2構造での設計が必要です。" },
+    { q:"「建築申請memo」で木造3階建て共同住宅の基準そのものが載っているのはどの章?", options:["§21(p.176〜)","§18(p.162〜)","§20(p.172〜)","§30(p.242〜)"], correct:0,
+      explain:"§18は防火・準防火地域内の木造3階建て一般ルール、§20は木造の「大規模建築物」で、§21(p.176〜、項番21-3〜21-6)が木造3階建共同住宅の基準そのものです。" },
+    { q:"建蔽率の計算式は?", options:["建築面積 ÷ 敷地面積","延床面積 ÷ 敷地面積","敷地面積 ÷ 建築面積","建築面積 ÷ 延床面積"], correct:0,
+      explain:"建蔽率 = 建築面積 ÷ 敷地面積で、角地緩和・耐火建築物緩和等を含めて判定します。" },
+    { q:"容積率の計算式は?", options:["延床面積 ÷ 敷地面積","建築面積 ÷ 敷地面積","敷地面積 ÷ 延床面積","延床面積 ÷ 建築面積"], correct:0,
+      explain:"容積率 = 延床面積 ÷ 敷地面積で、指定容積率と前面道路幅員系容積率の「いずれか厳しい方」を採用します。" },
+    { q:"容積率算定から除外できる部分として挙げられていないのは?", options:["バルコニー全体","共用廊下・階段","エレベーター昇降路","駐車場(上限1/5)"], correct:0,
+      explain:"容積率算定から除外できるのは共用廊下・階段、EV昇降路、駐車場(上限1/5)等です。バルコニー全体が無条件で除外されるわけではありません。" },
+    { q:"道路斜線制限とはどのような規制?", options:["前面道路の反対側境界線(または中心線)から一定勾配で斜線を引き、その内側に建物を収める高さ制限","隣地境界線から一定距離を離す規制","北側の日照を確保する高さ制限","冬至日の日影時間を制限する規制"], correct:0,
+      explain:"道路斜線制限は、道路境界線(または道路中心線)から一定勾配で斜線を引き、その内側に建物を収める高さ制限です。" },
+    { q:"北側斜線制限の目的は?", options:["住居専用地域等で北側隣地の日照・通風を確保するため","前面道路の圧迫感を防ぐため","冬至日の日影時間を制限するため","延焼を防止するため"], correct:0,
+      explain:"北側斜線制限は、住居専用地域等で北側隣地の日照・通風を確保するため、建物北側部分の高さを制限します。" },
+    { q:"日影規制の対象時間帯として説明されているのは?", options:["冬至日8時〜16時の8時間","夏至日8時〜16時の8時間","春分日6時〜18時の12時間","冬至日0時〜24時の終日"], correct:0,
+      explain:"日影規制は、冬至日8時〜16時の8時間のうち、用途地域ごとに決められた日影時間を超えないようにする規制です。" },
+    { q:"ボリュームチェックの本質として説明されているのは?", options:["複数のプランを並行して検討し、事業性と法規制のバランスが取れた形を見つけること","容積率を必ず100%消化すること","道路斜線のみを検討すること","法規制を無視して最大戸数を確保すること"], correct:0,
+      explain:"容積率を無理に消化しようとすると上層階が小さくなり「貸しにくい・売りにくいフロア」になるため、複数のプランを並行して検討し事業性と法規制のバランスを取ることがボリュームチェックの本質です。" },
+    { q:"建築物省エネ法の適合義務化で、全ての建築物が省エネ基準への適合義務の対象になったのはいつから?", options:["2026年4月1日(令和7年4月1日)以降に着工する新築・増改築","2025年1月1日以降","2027年4月1日以降","義務化はまだされていない"], correct:0,
+      explain:"2026年4月1日(令和7年4月1日)以降に着工する新築・増改築について、住宅・非住宅を問わず全ての建築物が省エネ基準への適合義務の対象になりました。" },
+    { q:"2026年3月31日までに確認済証を取得できなかった案件は、2026年4月1日以降どうなる?", options:["省エネ適合性判定(省エネ適判)を経ないと確認済証自体が発行されない","無条件で確認済証が発行される","省エネ基準は免除される","完了検査のみで済む"], correct:0,
+      explain:"2026年3月31日までに確認済証を取得できなかった案件は、4月1日以降、省エネ適合性判定(省エネ適判)を経ないと確認済証自体が発行されない扱いになります。" },
+    { q:"2026年3月31日までに確認済証を取得できた案件は、省エネ基準適合をいつ確認する扱いになる?", options:["完了検査(完了検査済証の発行)時","確認申請時のみ","着工前の事前協議時","竣工後1年以内の任意のタイミング"], correct:0,
+      explain:"2026年3月31日までに確認済証を取得できていれば、着工後の完了検査時に省エネ基準適合を確認する扱いになります。ここで適合が確認できないと検査済証が発行されません。" },
+    { q:"堺市開発行為等の手続に関する条例第7条で、協議対象となる集合建築物の基準として挙げられているのは?", options:["開発区域500㎡以上または住戸数10戸以上","住戸数5戸以上","開発区域1,000㎡以上のみ","戸建て住宅のみ対象"], correct:0,
+      explain:"条例第7条では、開発区域500㎡以上または住戸数10戸以上の集合建築物が協議対象となり、共同住宅ではこの基準が効きやすいとされています。" },
+    { q:"堺市で幅員4m未満の道路(建築基準法42条2項道路)の後退指導の根拠となる基準は?", options:["堺市狭あい道路後退指導基準","堺市開発行為等の手続に関する条例第5条","堺市宅地開発等に関する指導基準第18","都市計画法29条"], correct:0,
+      explain:"堺市では幅員4m未満の道路について「堺市狭あい道路後退指導基準」に基づき後退(セットバック)の指導を行っています。" },
+    { q:"大阪市で都市計画法29条に基づき開発許可の対象になる開発区域の面積の目安は?", options:["500㎡以上","100㎡以上","1,000㎡以上","3,000㎡以上"], correct:0,
+      explain:"大阪市では、開発区域の面積が500㎡以上の場合、原則として開発許可の対象になります。" },
+    { q:"居室の採光有効面積は、住宅の場合床面積のどれくらい以上必要とされる?(条件により緩和あり)", options:["1/7以上(条件により1/10まで緩和)","1/20以上","1/50以上","1/3以上"], correct:0,
+      explain:"採光有効面積は床面積の1/7以上(住宅、条件により1/10まで緩和)が必要とされています。" },
+    { q:"自然換気で必要とされる開口部の割合は?", options:["床面積の1/20以上","床面積の1/7以上","床面積の1/50以上","床面積の1/100以上"], correct:0,
+      explain:"自然換気は開口部が床面積の1/20以上必要とされています。" },
+    { q:"自然排煙で必要とされる有効開口の割合は?", options:["床面積の1/50以上","床面積の1/7以上","床面積の1/20以上","床面積の1/10以上"], correct:0,
+      explain:"排煙(自然)は有効開口が床面積の1/50以上必要とされています。" },
+    { q:"推奨されている図面レビューの手順で、最初に確認すべきとされているのは?", options:["図面間の整合性(階数・軒高・面積の数値一致)","省エネ・駐車場の該当有無","居室性能(採光・換気・排煙)","建蔽率・容積率・高さ制限の検算"], correct:0,
+      explain:"まず①図面間の整合性を確認し、次に②木三共4条件(特に敷地内通路)、③建蔽率・容積率・高さ制限の検算、④居室性能・避難、⑤省エネ・駐車場等の順に進めるのが推奨手順です。" },
+    { q:"図面レビューの推奨手順で、整合性チェックの次に優先確認すべきとされているのは?", options:["木三共4条件(特に敷地内通路)","居室の採光・換気・排煙","省エネ基準の適合","駐車場・駐輪場の附置義務"], correct:0,
+      explain:"次に木三共4条件(特に敷地内通路)を、この会社の主力商品の急所として優先確認するとされています。" },
+    { q:"避難規定で確認すべき項目として挙げられていないのは?", options:["非常用エレベーターの設置義務","二方向避難","廊下幅・階段幅(内法寸法)","直通階段までの歩行距離"], correct:0,
+      explain:"避難規定では歩行距離・二方向避難・廊下幅・階段幅・非常用進入口が挙げられており、非常用エレベーターの設置義務は挙げられていません(非常用進入口とは別物)。" },
+    { q:"木三共の意匠図チェックで、敷地内通路の確認ポイントとして挙げられているのは?", options:["隣地境界線・道路境界線からの離隔と通路幅員が確保されているか","バルコニーの手すり高さ","窓の防火設備の色","駐輪場の屋根の有無"], correct:0,
+      explain:"敷地内通路は、隣地境界線・道路境界線からの離隔、通路幅員が確保されているかを確認します。土地形状によって一番ネックになりやすい部分として、配置図で最優先確認するとされています。" },
+    { q:"竪穴区画・面積区画・異種用途区画は、どの確認ポイントに含まれる?", options:["避難・防火区画(共同住宅特有)","居室の採光・換気・排煙","建蔽率・容積率","省エネ基準"], correct:0,
+      explain:"竪穴区画・面積区画・異種用途区画の表記有無は、避難・防火区画(共同住宅特有)のチェック項目に含まれます。" },
+    { q:"アバンティオの自社ブランド物件として想定されている主な建物用途は?", options:["木造3階建てデザイナーズ共同住宅","戸建て住宅のみ","商業ビル","工場・倉庫"], correct:0,
+      explain:"自社ブランドの主力商品は「木造3階建てデザイナーズ共同住宅」で、木三共の法規に直結する最重要テーマとされています。" },
+    { q:"堺市の「堺市宅地開発等に関する指導基準」で、広場等の設置基準について定められている項目番号は?", options:["4","1","11","18"], correct:0,
+      explain:"「4. 広場等の設置基準について」に、必要広場面積の算定式などが定められています(住戸専有面積等に応じて必要㎡/戸が変わる)。" },
+    { q:"堺市宅地開発等に関する指導基準で、集会施設の設置基準の対象となる戸数の目安は?", options:["開発区域の住戸数が65戸以上の場合","10戸以上","30戸以上","100戸以上"], correct:0,
+      explain:"開発区域の住戸数が65戸以上の場合、集会施設を設置基準に基づき設置しなければならないとされています(ワンルームマンションは戸数を2分の1で換算)。" },
+    { q:"実務の第一歩として挙げられているのは?", options:["案件の敷地がどの自治体(大阪市/大阪府/堺市等)の管轄かを確認すること","いきなり詳細図面を作成すること","確認申請を先に提出すること","現地調査を省略すること"], correct:0,
+      explain:"実務の第一歩は、案件の敷地がどの自治体の管轄かを確認し、その自治体の担当課に事前相談することです。自治体ごとに運用が異なるため思い込みは危険とされています。" },
+    { q:"堺市の建築確認・開発協議・狭あい道路を担当する部署は?", options:["建築安全課","都市計画課","宅地安全課","公園緑地整備課"], correct:0,
+      explain:"建築安全課が建築確認・開発協議・狭あい道路を担当します(都市計画課は用途地域照会、宅地安全課は宅地造成規制区域、公園緑地整備課は広場等・緑化基準)。" }
+  ];
+
+  /* ========== データ:敷地診断シミュレーター ========== */
+  var DISTRICTS = [
+    { name:"第一種中高層住居専用地域", kenpei:60, youseki:200, isResidential:true },
+    { name:"第二種中高層住居専用地域", kenpei:60, youseki:200, isResidential:true },
+    { name:"第一種住居地域",         kenpei:60, youseki:200, isResidential:true },
+    { name:"第二種住居地域",         kenpei:60, youseki:200, isResidential:true },
+    { name:"準住居地域",             kenpei:60, youseki:200, isResidential:true },
+    { name:"近隣商業地域",           kenpei:80, youseki:300, isResidential:false },
+    { name:"商業地域",               kenpei:80, youseki:400, isResidential:false }
+  ];
+  var ROAD_WIDTHS = [4, 5, 6, 8];
+  var FIRE_ZONES = ["防火地域", "準防火地域", "指定なし", "指定なし"]; // 指定なしを出やすく
+
+  function randInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+  function pick(arr){ return arr[randInt(0, arr.length-1)]; }
+  function round10(n){ return Math.round(n/10)*10; }
+
+  function genSite(){
+    var district = pick(DISTRICTS);
+    var area = round10(randInt(200, 500));
+    var road = pick(ROAD_WIDTHS);
+    var fire = pick(FIRE_ZONES);
+    var units = randInt(8, 20);
+    var roadRatio = district.isResidential ? 0.4 : 0.6;
+
+    var kenpeiLimit = Math.round(area * district.kenpei / 100);
+    var yousekiByDesignated = Math.round(area * district.youseki / 100);
+    var yousekiByRoad = Math.round(area * road * roadRatio);
+    var yousekiLimit = Math.min(yousekiByDesignated, yousekiByRoad);
+    var stricter = yousekiByDesignated <= yousekiByRoad ? "指定容積率" : "道路幅員ベース";
+
+    var mokusankyoOK, mokusankyoReason;
+    if (fire === "防火地域") {
+      mokusankyoOK = false;
+      mokusankyoReason = "防火地域内のため、木三共仕様(1時間準耐火)は使えません。耐火建築物が必要です。";
+    } else if (yousekiLimit > 3000) {
+      mokusankyoOK = false;
+      mokusankyoReason = "延床面積の上限が3,000㎡を超えるため、4条件による木三共仕様の原則的な対象外です(個別に要確認)。";
+    } else {
+      mokusankyoOK = true;
+      mokusankyoReason = "防火地域外で延床面積の上限が3,000㎡以下のため、4条件(1時間準耐火構造・避難上有効なバルコニー・敷地内通路・防火設備)を満たせば木三共仕様が使える可能性があります。";
+    }
+
+    var needsIro2;
+    if (fire === "準防火地域" && yousekiLimit > 500) {
+      needsIro2 = "必要(イ-2構造またはロ-2構造)";
+    } else if (fire === "準防火地域") {
+      needsIro2 = "不要(延床500㎡以下)";
+    } else {
+      needsIro2 = "該当なし(準防火地域ではない)";
+    }
+
+    return {
+      district: district, area: area, road: road, fire: fire, units: units, roadRatio: roadRatio,
+      kenpeiLimit: kenpeiLimit, yousekiByDesignated: yousekiByDesignated, yousekiByRoad: yousekiByRoad,
+      yousekiLimit: yousekiLimit, stricter: stricter,
+      mokusankyoOK: mokusankyoOK, mokusankyoReason: mokusankyoReason, needsIro2: needsIro2
+    };
+  }
+
+  /* ========== 状態管理・ゲーミフィケーション ========== */
+  var STORAGE_KEY = "mokusankyoDojoState_v1";
+  var state = {
+    xp: 0, level: 1, streak: 0, bestStreak: 0,
+    quizOrder: [], quizPos: 0, quizCorrectCount: 0, quizAnswered: false
+  };
+  function loadState(){
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var saved = JSON.parse(raw);
+        Object.assign(state, saved);
+      }
+    } catch(e){}
+    if (!state.quizOrder || state.quizOrder.length !== QUIZ_QUESTIONS.length) {
+      state.quizOrder = shuffledIndices(QUIZ_QUESTIONS.length);
+      state.quizPos = 0;
+      state.quizCorrectCount = 0;
+    }
+  }
+  function saveState(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+  }
+  function shuffledIndices(n){
+    var arr = []; for (var i=0;i<n;i++) arr.push(i);
+    for (var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+    return arr;
+  }
+  function xpForLevel(lv){ return lv*100; }
+  function addXP(n){
+    state.xp += n;
+    while (state.xp >= xpForLevel(state.level)) {
+      state.xp -= xpForLevel(state.level);
+      state.level += 1;
+    }
+    saveState();
+    renderStatBar();
+  }
+  function renderStatBar(){
+    document.getElementById("lv-badge").textContent = state.level;
+    document.getElementById("lv-num").textContent = state.level;
+    var need = xpForLevel(state.level);
+    document.getElementById("xp-remain").textContent = need - state.xp;
+    document.getElementById("xp-fill").style.width = Math.round(state.xp/need*100) + "%";
+    document.getElementById("streak-num").textContent = state.streak;
+  }
+
+  /* ========== 知識クイズ ========== */
+  function currentQuizQuestion(){
+    if (state.quizPos >= state.quizOrder.length) {
+      state.quizOrder = shuffledIndices(QUIZ_QUESTIONS.length);
+      state.quizPos = 0;
+      state.quizCorrectCount = 0;
+    }
+    return QUIZ_QUESTIONS[state.quizOrder[state.quizPos]];
+  }
+  function renderQuiz(){
+    var q = currentQuizQuestion();
+    document.getElementById("quiz-progress").textContent =
+      "問題 " + (state.quizPos+1) + " / " + QUIZ_QUESTIONS.length + " ・ このセット正解 " + state.quizCorrectCount;
+    document.getElementById("quiz-q").textContent = q.q;
+    var optWrap = document.getElementById("quiz-opts");
+    optWrap.innerHTML = "";
+    q.options.forEach(function(opt, i){
+      var btn = document.createElement("button");
+      btn.className = "opt-btn";
+      btn.textContent = opt;
+      btn.addEventListener("click", function(){ answerQuiz(i); });
+      optWrap.appendChild(btn);
+    });
+    document.getElementById("quiz-feedback").innerHTML = "";
+    document.getElementById("quiz-next").style.display = "none";
+    state.quizAnswered = false;
+  }
+  function answerQuiz(i){
+    if (state.quizAnswered) return;
+    state.quizAnswered = true;
+    var q = currentQuizQuestion();
+    var buttons = document.querySelectorAll("#quiz-opts .opt-btn");
+    buttons.forEach(function(b, idx){
+      b.disabled = true;
+      if (idx === q.correct) b.classList.add("correct");
+      else if (idx === i && i !== q.correct) b.classList.add("wrong");
+    });
+    var fb = document.getElementById("quiz-feedback");
+    if (i === q.correct) {
+      state.quizCorrectCount++;
+      state.streak++;
+      if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+      addXP(10);
+      fb.innerHTML = '<div class="feedback correct"><b>✅ 正解</b>' + q.explain + '</div>';
+    } else {
+      state.streak = 0;
+      saveState();
+      renderStatBar();
+      fb.innerHTML = '<div class="feedback wrong"><b>❌ 不正解</b>' + q.explain + '</div>';
+    }
+    document.getElementById("quiz-next").style.display = "block";
+  }
+  document.getElementById("quiz-next").addEventListener("click", function(){
+    state.quizPos++;
+    saveState();
+    renderQuiz();
+  });
+
+  /* ========== 敷地診断シミュレーター ========== */
+  var simSite = null;
+  var simStep = 0; // 0..5 = 6問, 6 = まとめ
+  var simAnswers = [];
+
+  var SIM_QUESTIONS = [
+    { key:"kenpei", label:"① 建築面積の上限は?(建蔽率から算定)", unit:"㎡",
+      getAnswer: function(s){ return s.kenpeiLimit; },
+      explainFn: function(s){ return "計算式: 敷地面積 " + s.area + "㎡ × 建蔽率 " + s.district.kenpei + "% = <code>" + s.kenpeiLimit + "㎡</code>"; } },
+    { key:"yousekiA", label:"② 容積率上限(指定容積率ベース)は?", unit:"㎡",
+      getAnswer: function(s){ return s.yousekiByDesignated; },
+      explainFn: function(s){ return "計算式: 敷地面積 " + s.area + "㎡ × 指定容積率 " + s.district.youseki + "% = <code>" + s.yousekiByDesignated + "㎡</code>"; } },
+    { key:"yousekiB", label:"③ 容積率上限(前面道路幅員ベース)は?", unit:"㎡",
+      getAnswer: function(s){ return s.yousekiByRoad; },
+      explainFn: function(s){ return "計算式: 前面道路幅員 " + s.road + "m × 係数 " + s.roadRatio + "(" + (s.district.isResidential ? "住居系用途地域" : "非住居系用途地域") + ") × 敷地面積 " + s.area + "㎡ = <code>" + s.yousekiByRoad + "㎡</code>"; } },
+    { key:"stricter", label:"④ 実際に採用される延床面積の上限は、②③のどちらが厳しい(小さい)?", unit:"select",
+      options: ["指定容積率", "道路幅員ベース"],
+      getAnswer: function(s){ return s.stricter; },
+      explainFn: function(s){ return "②(" + s.yousekiByDesignated + "㎡)と③(" + s.yousekiByRoad + "㎡)の<b>小さい方</b>(=より厳しい方)を採用します。この敷地では上限 <code>" + s.yousekiLimit + "㎡</code> です。"; } },
+    { key:"moku", label:"⑤ この敷地で木三共仕様(1時間準耐火)は使える可能性がある?", unit:"select",
+      options: ["使える可能性がある", "使えない"],
+      getAnswer: function(s){ return s.mokusankyoOK ? "使える可能性がある" : "使えない"; },
+      explainFn: function(s){ return s.mokusankyoReason; } },
+    { key:"iro2", label:"⑥ 準防火地域で延床500㎡を超える場合に必要な追加構造は?", unit:"select",
+      options: ["必要(イ-2構造またはロ-2構造)", "不要(延床500㎡以下)", "該当なし(準防火地域ではない)"],
+      getAnswer: function(s){ return s.needsIro2; },
+      explainFn: function(s){
+        if (s.fire === "準防火地域" && s.yousekiLimit > 500) return "この敷地は準防火地域内で延床上限が500㎡を超えるため、イ-2構造(45分準耐火)またはロ-2構造での設計が必要です。";
+        if (s.fire === "準防火地域") return "この敷地は準防火地域内ですが延床上限が500㎡以下のため、追加構造の指定はありません。";
+        return "この敷地は準防火地域ではない(" + s.fire + ")ため、この規定の対象外です。";
+      } }
+  ];
+
+  function fmtDistrict(s){ return s.district.name + "(建蔽率" + s.district.kenpei + "%・容積率" + s.district.youseki + "%)"; }
+
+  function startNewSite(){
+    simSite = genSite();
+    simStep = 0;
+    simAnswers = [];
+    renderSim();
+  }
+
+  function renderSiteCard(s){
+    return '' +
+      '<div class="site-card">' +
+        '<span class="tag">架空案件</span>' +
+        '<dl class="site-grid">' +
+          '<dt>敷地面積</dt><dd>' + s.area + ' ㎡</dd>' +
+          '<dt>前面道路幅員</dt><dd>' + s.road + ' m</dd>' +
+          '<dt>用途地域</dt><dd>' + fmtDistrict(s) + '</dd>' +
+          '<dt>防火指定</dt><dd>' + s.fire + '</dd>' +
+          '<dt>想定戸数</dt><dd>' + s.units + ' 戸</dd>' +
+        '</dl>' +
+      '</div>';
+  }
+
+  function renderSim(){
+    var body = document.getElementById("sim-body");
+    if (!simSite) {
+      body.innerHTML = '<div class="panel" style="text-align:center;">' +
+        '<p style="color:var(--ink-soft); font-size:.9rem;">ボタンを押すと、架空の敷地条件(敷地面積・前面道路幅員・用途地域・防火指定・想定戸数)がランダムに生成されます。全6問の計算・判定に挑戦してください。</p>' +
+        '<button class="primary-btn accent" id="gen-site-btn">🎲 新しい案件を生成</button>' +
+      '</div>';
+      document.getElementById("gen-site-btn").addEventListener("click", startNewSite);
+      return;
+    }
+
+    if (simStep >= SIM_QUESTIONS.length) {
+      // まとめ画面
+      var correctCount = simAnswers.filter(function(a){ return a.correct; }).length;
+      var rows = simAnswers.map(function(a, i){
+        var qd = SIM_QUESTIONS[i];
+        return '<tr><td>' + qd.label.replace(/^[①-⑥]\s*/, "") + '</td><td class="' + (a.correct ? "ok" : "ng") + '">' + (a.correct ? "正解" : "不正解") + '</td><td>' + a.correctAnswer + (qd.unit === "㎡" ? "㎡" : "") + '</td></tr>';
+      }).join("");
+      body.innerHTML = '' +
+        renderSiteCard(simSite) +
+        '<div class="panel site-summary">' +
+          '<p style="margin:0 0 6px; font-weight:700;">この案件の結果:' + correctCount + ' / ' + SIM_QUESTIONS.length + ' 問正解</p>' +
+          '<table><thead><tr><th>設問</th><th>結果</th><th>正答</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+          '<button class="primary-btn accent" id="gen-site-btn2" style="margin-top:14px;">🎲 次の案件へ</button>' +
+        '</div>';
+      document.getElementById("gen-site-btn2").addEventListener("click", startNewSite);
+      addXP(correctCount * 8);
+      return;
+    }
+
+    var qd = SIM_QUESTIONS[simStep];
+    var already = simAnswers[simStep];
+    var html = renderSiteCard(simSite) +
+      '<div class="panel">' +
+        '<div class="q-progress">設問 ' + (simStep+1) + ' / ' + SIM_QUESTIONS.length + '</div>' +
+        '<p class="q-text">' + qd.label + '</p>';
+
+    if (qd.unit === "select") {
+      html += '<div class="opt-list" id="sim-opts">';
+      qd.options.forEach(function(opt, i){
+        html += '<button class="opt-btn" data-opt="' + i + '">' + opt + '</button>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="num-input-row"><input type="number" id="sim-num-input" inputmode="decimal" placeholder="数値を入力"><span class="num-unit">' + qd.unit + '</span></div>' +
+              '<button class="submit-btn" id="sim-submit-btn">回答する</button>';
+    }
+    html += '<div id="sim-feedback"></div>' +
+            '<button class="next-btn" id="sim-next-btn" style="display:none;">次の設問へ →</button>' +
+          '</div>';
+
+    body.innerHTML = html;
+
+    if (already) {
+      showSimFeedback(qd, already.userAnswer, true);
+    } else if (qd.unit === "select") {
+      document.querySelectorAll("#sim-opts .opt-btn").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var idx = parseInt(btn.getAttribute("data-opt"), 10);
+          submitSimAnswer(qd, qd.options[idx]);
+        });
+      });
+    } else {
+      document.getElementById("sim-submit-btn").addEventListener("click", function(){
+        var val = document.getElementById("sim-num-input").value;
+        submitSimAnswer(qd, val === "" ? null : Number(val));
+      });
+    }
+
+    if (already) {
+      document.getElementById("sim-next-btn").style.display = "block";
+      document.getElementById("sim-next-btn").addEventListener("click", function(){ simStep++; renderSim(); });
+    }
+  }
+
+  function submitSimAnswer(qd, userAnswer){
+    var correctAnswer = qd.getAnswer(simSite);
+    var isCorrect;
+    if (typeof correctAnswer === "number") {
+      isCorrect = userAnswer !== null && Math.abs(userAnswer - correctAnswer) <= 1;
+    } else {
+      isCorrect = userAnswer === correctAnswer;
+    }
+    simAnswers[simStep] = { userAnswer: userAnswer, correctAnswer: correctAnswer, correct: isCorrect };
+
+    if (isCorrect) { state.streak++; if (state.streak > state.bestStreak) state.bestStreak = state.streak; }
+    else { state.streak = 0; }
+    saveState();
+    renderStatBar();
+
+    // ロック&フィードバック表示
+    if (qd.unit === "select") {
+      document.querySelectorAll("#sim-opts .opt-btn").forEach(function(btn){
+        btn.disabled = true;
+        if (btn.textContent === correctAnswer) btn.classList.add("correct");
+        else if (btn.textContent === userAnswer) btn.classList.add("wrong");
+      });
+    } else {
+      document.getElementById("sim-num-input").disabled = true;
+      document.getElementById("sim-submit-btn").disabled = true;
+    }
+    showSimFeedback(qd, userAnswer, isCorrect);
+    document.getElementById("sim-next-btn").style.display = "block";
+    document.getElementById("sim-next-btn").addEventListener("click", function(){ simStep++; renderSim(); });
+  }
+
+  function showSimFeedback(qd, userAnswer, isCorrect){
+    var fb = document.getElementById("sim-feedback");
+    var explainHtml = qd.explainFn(simSite);
+    fb.innerHTML = '<div class="feedback ' + (isCorrect ? "correct" : "wrong") + '"><b>' + (isCorrect ? "✅ 正解" : "❌ 不正解") + '</b>' +
+      '<div class="calc-explain">' + explainHtml + '</div></div>';
+  }
+
+  /* ========== モード切替 ========== */
+  document.getElementById("tab-quiz").addEventListener("click", function(){
+    document.getElementById("tab-quiz").classList.add("active");
+    document.getElementById("tab-sim").classList.remove("active");
+    document.getElementById("quiz-mode").style.display = "block";
+    document.getElementById("sim-mode").style.display = "none";
+  });
+  document.getElementById("tab-sim").addEventListener("click", function(){
+    document.getElementById("tab-sim").classList.add("active");
+    document.getElementById("tab-quiz").classList.remove("active");
+    document.getElementById("sim-mode").style.display = "block";
+    document.getElementById("quiz-mode").style.display = "none";
+    if (!simSite) renderSim();
+  });
+
+  document.getElementById("reset-btn").addEventListener("click", function(){
+    if (!confirm("進捗(レベル・XP・連続正解記録)をリセットします。よろしいですか?")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state = { xp:0, level:1, streak:0, bestStreak:0, quizOrder: shuffledIndices(QUIZ_QUESTIONS.length), quizPos:0, quizCorrectCount:0, quizAnswered:false };
+    saveState();
+    renderStatBar();
+    renderQuiz();
+    simSite = null; simStep = 0; simAnswers = [];
+    renderSim();
+  });
+
+  /* ========== 初期化 ========== */
+  loadState();
+  renderStatBar();
+  renderQuiz();
+  renderSim();
+})();
+</script>
+</body>
+</html>
