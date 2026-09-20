@@ -163,6 +163,18 @@
     font-size: .76rem; color: var(--ink-soft); background: var(--card-bg); border: 1px dashed var(--paper-line);
     border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
   }
+  .due-banner {
+    font-size: .8rem; color: var(--teal); background: var(--teal-soft); border: 1px solid color-mix(in srgb, var(--teal) 35%, transparent);
+    border-radius: 8px; padding: 9px 14px; margin-bottom: 16px;
+  }
+  .due-banner.none { color: var(--ink-soft); background: var(--card-bg); border-color: var(--paper-line); }
+  .round-summary-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .round-summary-table th, .round-summary-table td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--paper-line); font-size: .8rem; }
+  .round-summary-table th { color: var(--ink-soft); font-weight: 600; font-size: .72rem; }
+  .box-pill { display:inline-block; font-size:.68rem; font-weight:700; padding:1px 8px; border-radius:999px; white-space:nowrap; }
+  .box-pill.b0 { background: var(--bad-soft); color: var(--bad); }
+  .box-pill.bmid { background: var(--accent-soft); color: var(--accent); }
+  .box-pill.bhigh { background: var(--good-soft); color: var(--good); }
 
   .footer-note { font-size: .76rem; color: var(--ink-soft); text-align: center; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--paper-line); }
   .footer-note button { font-size: .74rem; color: var(--ink-soft); background: none; border: 1px solid var(--paper-line); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
@@ -195,13 +207,8 @@
 
   <!-- ===== 知識クイズ ===== -->
   <div id="quiz-mode">
-    <div class="panel">
-      <div class="q-progress" id="quiz-progress">問題 1 / 34 ・ 正解 0</div>
-      <p class="q-text" id="quiz-q"></p>
-      <div class="opt-list" id="quiz-opts"></div>
-      <div id="quiz-feedback"></div>
-      <button class="next-btn" id="quiz-next" style="display:none;">次の問題へ →</button>
-    </div>
+    <div id="quiz-due-banner" class="due-banner"></div>
+    <div id="quiz-body"></div>
   </div>
 
   <!-- ===== 敷地診断シミュレーター ===== -->
@@ -211,7 +218,7 @@
   </div>
 
   <div class="footer-note">
-    全34問(知識クイズ)＋敷地診断は無限に生成 ・ 進捗はこの端末のブラウザに保存されます<br>
+    全43問(知識クイズ・10問1ラウンド制、忘却曲線に基づく復習あり)＋敷地診断は無限に生成 ・ 進捗はこの端末のブラウザに保存されます<br>
     <button id="reset-btn">進捗をリセット</button>
   </div>
 </div>
@@ -236,8 +243,6 @@
       explain:"防火地域外・準防火地域外では延床1,500㎡以下(原則3,000㎡以下)で耐火建築物を回避できます。" },
     { q:"準防火地域内で延床面積が500㎡を超える場合、木三共で必要になる構造は?", options:["イ-2構造またはロ-2構造","1時間準耐火構造のみでよい","耐火建築物が絶対条件","規定なし"], correct:0,
       explain:"準防火地域内で延床500㎡超の場合、イ-2構造(45分準耐火)またはロ-2構造での設計が必要です。" },
-    { q:"「建築申請memo」で木造3階建て共同住宅の基準そのものが載っているのはどの章?", options:["§21(p.176〜)","§18(p.162〜)","§20(p.172〜)","§30(p.242〜)"], correct:0,
-      explain:"§18は防火・準防火地域内の木造3階建て一般ルール、§20は木造の「大規模建築物」で、§21(p.176〜、項番21-3〜21-6)が木造3階建共同住宅の基準そのものです。" },
     { q:"建蔽率の計算式は?", options:["建築面積 ÷ 敷地面積","延床面積 ÷ 敷地面積","敷地面積 ÷ 建築面積","建築面積 ÷ 延床面積"], correct:0,
       explain:"建蔽率 = 建築面積 ÷ 敷地面積で、角地緩和・耐火建築物緩和等を含めて判定します。" },
     { q:"容積率の計算式は?", options:["延床面積 ÷ 敷地面積","建築面積 ÷ 敷地面積","敷地面積 ÷ 延床面積","延床面積 ÷ 建築面積"], correct:0,
@@ -289,7 +294,27 @@
     { q:"実務の第一歩として挙げられているのは?", options:["案件の敷地がどの自治体(大阪市/大阪府/堺市等)の管轄かを確認すること","いきなり詳細図面を作成すること","確認申請を先に提出すること","現地調査を省略すること"], correct:0,
       explain:"実務の第一歩は、案件の敷地がどの自治体の管轄かを確認し、その自治体の担当課に事前相談することです。自治体ごとに運用が異なるため思い込みは危険とされています。" },
     { q:"堺市の建築確認・開発協議・狭あい道路を担当する部署は?", options:["建築安全課","都市計画課","宅地安全課","公園緑地整備課"], correct:0,
-      explain:"建築安全課が建築確認・開発協議・狭あい道路を担当します(都市計画課は用途地域照会、宅地安全課は宅地造成規制区域、公園緑地整備課は広場等・緑化基準)。" }
+      explain:"建築安全課が建築確認・開発協議・狭あい道路を担当します(都市計画課は用途地域照会、宅地安全課は宅地造成規制区域、公園緑地整備課は広場等・緑化基準)。" },
+    { q:"図面レビューの整合性チェックで、求積図について確認すべきことは?", options:["敷地面積・建築面積・延床面積の算定根拠と、各図面上の寸法が一致しているか","色使いが図面全体で統一されているか","印鑑の押印位置","縮尺が1/100に統一されているか"], correct:0,
+      explain:"求積図(敷地面積・建築面積・延床面積の算定根拠)と、各図面上の寸法が一致しているかを、レビューの最初に確認します。" },
+    { q:"建蔽率の緩和要因として挙げられているものは?", options:["角地緩和・防火地域内耐火建築物緩和","容積率緩和・高さ制限緩和","日影規制緩和・斜線緩和","駐車場緩和・自転車置場緩和"], correct:0,
+      explain:"建築面積 ÷ 敷地面積が指定建蔽率(角地緩和・防火地域内耐火建築物緩和等を含む)以内かを確認します。" },
+    { q:"3階建ての意匠図チェックで、非常用進入口について確認すべき内容は?", options:["代替進入口の条件を満たしているか","エレベーターの定員","避難階段の色","窓の開閉方向"], correct:0,
+      explain:"非常用進入口は、3階建てで代替進入口の条件を満たしているかを確認します。" },
+    { q:"大阪府(大阪市域外)で開発許可・宅地造成等・違反建築の指導を所管する部署は?", options:["大阪府住宅建築局建築指導室","大阪府都市整備部","大阪市計画調整局開発調整部","堺市建築安全課"], correct:0,
+      explain:"大阪府(大阪市域外)では大阪府住宅建築局建築指導室が開発許可・宅地造成等・違反建築の指導を所管します。" },
+    { q:"開発許可の審査基準にある「技術基準」と「立地基準」の違いは?", options:["技術基準は道路・公園・給排水施設等の整備水準、立地基準は市街化調整区域内での建築を制限する基準","技術基準は建物の外観デザイン、立地基準は建物の色彩","技術基準と立地基準は同じ内容を指す","技術基準は木造のみ、立地基準はRC造のみに適用される"], correct:0,
+      explain:"技術基準は道路・公園・給排水施設等の整備水準を定めたもの、立地基準は市街化調整区域内での建築を制限するものです。" },
+    { q:"堺市宅地開発等に関する指導基準の「防犯灯の設置基準」(住戸数20戸以上が対象)は、どのような開発が対象?", options:["共同住宅を除く開発区域","共同住宅のみが対象","戸建て・共同住宅を問わず全て対象","商業施設のみが対象"], correct:0,
+      explain:"防犯灯の設置基準は「開発区域の住戸数(共同住宅を除く)が20戸以上の場合」が対象であり、木三共のような共同住宅はこの基準の対象外です。実務では見落としやすい注意点です。" },
+    { q:"堺市宅地開発等に関する指導基準の「交通関係施設の整備基準」で、自動車駐車場の必要台数を確認する際、まず区別すべきことは?", options:["堺市建築物における駐車施設の附置等に関する条例が適用される「駐車場条例適用区域」内か外か","前面道路が市道か府道か","敷地が角地かどうか","建物が木造かRC造か"], correct:0,
+      explain:"自動車駐車場は、駐車場条例適用区域内(延べ面積1,000㎡未満は表11-1)か区域外(表11-2)かで参照する基準表が異なります。" },
+    { q:"堺市宅地開発等に関する指導基準で、集合住宅施設の緑化面積基準(開発区域に占める割合)は?", options:["15%以上","5%以上","30%以上","50%以上"], correct:0,
+      explain:"集合住宅施設・長屋住宅の緑化面積基準は、開発区域(道路後退部分を除く)に占める割合で15%以上とされています。" },
+    { q:"堺市宅地開発等に関する指導基準で、共同住宅(住戸面積50㎡以上)の必要広場面積の算定基準は?", options:["6㎡以上/戸","2㎡以上/戸","10㎡以上/戸","1㎡以上/戸"], correct:0,
+      explain:"共同住宅(住戸面積50㎡以上)は6㎡以上/戸、30〜50㎡未満は4㎡以上/戸、30㎡未満は2㎡以上/戸が必要広場面積の算定基準です。" },
+    { q:"建築物省エネ法の適合義務化に伴い、廃止された従来の制度は?", options:["「届出制度」「説明義務制度」","「確認申請制度」","「完了検査制度」","「開発許可制度」"], correct:0,
+      explain:"全ての建築物が省エネ基準への適合義務の対象になったのに伴い、従来の「届出制度」「説明義務制度」は廃止されています。" }
   ];
 
   /* ========== データ:敷地診断シミュレーター ========== */
@@ -352,11 +377,67 @@
     };
   }
 
+  /* ========== 間隔反復(簡易ライトナーシステム、エビングハウスの忘却曲線に近似) ==========
+     box0(新規/直前に間違えた)→正解で box1(+1日)→box2(+3日)→box3(+7日)→box4(+16日)→box5(+35日、以降は35日周期で維持)
+     不正解の場合は box0 に戻り、即日「復習対象」になる。nutrilab(精密栄養ラボ)と同じ方式。 */
+  QUIZ_QUESTIONS.forEach(function(q, i){ q.id = "q" + i; });
+  var SRS_INTERVALS = [1, 3, 7, 16, 35];
+  function todayDateOnly(){
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+  function addDaysStr(dateStr, days){
+    var d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+  function updateSrsAfterAnswer(qid, isCorrect){
+    var today = todayDateOnly();
+    var rec = state.srs[qid] || { box:0, correct:0, wrong:0, due: today, lastSeen: null };
+    if (isCorrect){
+      rec.box = Math.min(rec.box + 1, SRS_INTERVALS.length);
+      rec.due = addDaysStr(today, SRS_INTERVALS[rec.box - 1]);
+      rec.correct++;
+    } else {
+      rec.box = 0;
+      rec.due = today;
+      rec.wrong++;
+    }
+    rec.lastSeen = today;
+    state.srs[qid] = rec;
+  }
+  function dueCountFor(pool){
+    var today = todayDateOnly();
+    return pool.filter(function(q){
+      var rec = state.srs[q.id];
+      return rec && rec.due <= today;
+    }).length;
+  }
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+  function buildRoundPool(pool, n){
+    var today = todayDateOnly();
+    var due = [], fresh = [], upcoming = [];
+    pool.forEach(function(q){
+      var rec = state.srs[q.id];
+      if (!rec) fresh.push(q);
+      else if (rec.due <= today) due.push(q);
+      else upcoming.push(q);
+    });
+    due.sort(function(a,b){ return state.srs[a.id].due < state.srs[b.id].due ? -1 : 1; });
+    upcoming.sort(function(a,b){ return state.srs[a.id].due < state.srs[b.id].due ? -1 : 1; });
+    var ordered = shuffle(due).concat(shuffle(fresh)).concat(upcoming);
+    return ordered.slice(0, n);
+  }
+
   /* ========== 状態管理・ゲーミフィケーション ========== */
-  var STORAGE_KEY = "mokusankyoDojoState_v1";
+  var STORAGE_KEY = "mokusankyoDojoState_v2";
+  var ROUND_SIZE = 10;
   var state = {
-    xp: 0, level: 1, streak: 0, bestStreak: 0,
-    quizOrder: [], quizPos: 0, quizCorrectCount: 0, quizAnswered: false
+    xp: 0, level: 1, streak: 0, bestStreak: 0, srs: {}
   };
   function loadState(){
     try {
@@ -366,19 +447,10 @@
         Object.assign(state, saved);
       }
     } catch(e){}
-    if (!state.quizOrder || state.quizOrder.length !== QUIZ_QUESTIONS.length) {
-      state.quizOrder = shuffledIndices(QUIZ_QUESTIONS.length);
-      state.quizPos = 0;
-      state.quizCorrectCount = 0;
-    }
+    if (!state.srs) state.srs = {};
   }
   function saveState(){
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
-  }
-  function shuffledIndices(n){
-    var arr = []; for (var i=0;i<n;i++) arr.push(i);
-    for (var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
-    return arr;
   }
   function xpForLevel(lv){ return lv*100; }
   function addXP(n){
@@ -399,37 +471,72 @@
     document.getElementById("streak-num").textContent = state.streak;
   }
 
-  /* ========== 知識クイズ ========== */
-  function currentQuizQuestion(){
-    if (state.quizPos >= state.quizOrder.length) {
-      state.quizOrder = shuffledIndices(QUIZ_QUESTIONS.length);
-      state.quizPos = 0;
-      state.quizCorrectCount = 0;
+  /* ========== 知識クイズ(10問1ラウンド制・忘却曲線ベースの出題) ========== */
+  var quizRound = null; // { pool:[questions...], idx, correctCount, results:[] }
+  var quizAnswered = false;
+
+  function renderDueBanner(){
+    var due = dueCountFor(QUIZ_QUESTIONS);
+    var el = document.getElementById("quiz-due-banner");
+    if (due > 0) {
+      el.className = "due-banner";
+      el.textContent = "🔁 復習タイミングが来た問題が " + due + " 問あります。次のラウンドで優先的に出題されます。";
+    } else {
+      el.className = "due-banner none";
+      el.textContent = "今日復習すべき問題はありません。新しい問題または今後の復習に備えるラウンドに挑戦しましょう。";
     }
-    return QUIZ_QUESTIONS[state.quizOrder[state.quizPos]];
   }
+
+  function startQuizRound(){
+    var n = Math.min(ROUND_SIZE, QUIZ_QUESTIONS.length);
+    var picked = buildRoundPool(QUIZ_QUESTIONS, n);
+    quizRound = { pool: picked, idx: 0, correctCount: 0, results: [] };
+    quizAnswered = false;
+    renderDueBanner();
+    renderQuiz();
+  }
+
   function renderQuiz(){
-    var q = currentQuizQuestion();
-    document.getElementById("quiz-progress").textContent =
-      "問題 " + (state.quizPos+1) + " / " + QUIZ_QUESTIONS.length + " ・ このセット正解 " + state.quizCorrectCount;
-    document.getElementById("quiz-q").textContent = q.q;
-    var optWrap = document.getElementById("quiz-opts");
-    optWrap.innerHTML = "";
-    q.options.forEach(function(opt, i){
-      var btn = document.createElement("button");
-      btn.className = "opt-btn";
-      btn.textContent = opt;
-      btn.addEventListener("click", function(){ answerQuiz(i); });
-      optWrap.appendChild(btn);
+    var body = document.getElementById("quiz-body");
+    if (!quizRound) {
+      body.innerHTML = '<div class="panel" style="text-align:center;">' +
+        '<p style="color:var(--ink-soft); font-size:.9rem;">全' + QUIZ_QUESTIONS.length + '問から、復習期限が来ている問題を優先して10問1ラウンドで出題します(エビングハウスの忘却曲線に基づく間隔反復)。</p>' +
+        '<button class="primary-btn accent" id="start-round-btn">▶ ラウンドを始める(10問)</button>' +
+      '</div>';
+      document.getElementById("start-round-btn").addEventListener("click", startQuizRound);
+      return;
+    }
+    if (quizRound.idx >= quizRound.pool.length) {
+      renderQuizRoundSummary();
+      return;
+    }
+    var q = quizRound.pool[quizRound.idx];
+    quizAnswered = false;
+    var html = '<div class="panel">' +
+      '<div class="q-progress">問題 ' + (quizRound.idx+1) + ' / ' + quizRound.pool.length + ' ・ このラウンド正解 ' + quizRound.correctCount + '</div>' +
+      '<p class="q-text">' + q.q + '</p>' +
+      '<div class="opt-list" id="quiz-opts">' +
+        q.options.map(function(opt, i){ return '<button class="opt-btn" data-i="' + i + '">' + opt + '</button>'; }).join("") +
+      '</div>' +
+      '<div id="quiz-feedback"></div>' +
+      '<button class="next-btn" id="quiz-next" style="display:none;">次の問題へ →</button>' +
+    '</div>';
+    body.innerHTML = html;
+    document.querySelectorAll("#quiz-opts .opt-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){ answerQuiz(parseInt(btn.getAttribute("data-i"), 10)); });
     });
-    document.getElementById("quiz-feedback").innerHTML = "";
-    document.getElementById("quiz-next").style.display = "none";
-    state.quizAnswered = false;
+    document.getElementById("quiz-next").addEventListener("click", function(){
+      quizRound.idx++;
+      saveState();
+      renderQuiz();
+    });
   }
+
   function answerQuiz(i){
-    if (state.quizAnswered) return;
-    state.quizAnswered = true;
-    var q = currentQuizQuestion();
+    if (quizAnswered) return;
+    quizAnswered = true;
+    var q = quizRound.pool[quizRound.idx];
+    var isCorrect = (i === q.correct);
     var buttons = document.querySelectorAll("#quiz-opts .opt-btn");
     buttons.forEach(function(b, idx){
       b.disabled = true;
@@ -437,25 +544,43 @@
       else if (idx === i && i !== q.correct) b.classList.add("wrong");
     });
     var fb = document.getElementById("quiz-feedback");
-    if (i === q.correct) {
-      state.quizCorrectCount++;
+    if (isCorrect) {
+      quizRound.correctCount++;
       state.streak++;
       if (state.streak > state.bestStreak) state.bestStreak = state.streak;
       addXP(10);
       fb.innerHTML = '<div class="feedback correct"><b>✅ 正解</b>' + q.explain + '</div>';
     } else {
       state.streak = 0;
-      saveState();
-      renderStatBar();
       fb.innerHTML = '<div class="feedback wrong"><b>❌ 不正解</b>' + q.explain + '</div>';
     }
+    updateSrsAfterAnswer(q.id, isCorrect);
+    quizRound.results.push({ q: q, correct: isCorrect });
+    saveState();
+    renderStatBar();
     document.getElementById("quiz-next").style.display = "block";
   }
-  document.getElementById("quiz-next").addEventListener("click", function(){
-    state.quizPos++;
-    saveState();
-    renderQuiz();
-  });
+
+  function renderQuizRoundSummary(){
+    var body = document.getElementById("quiz-body");
+    var correctCount = quizRound.results.filter(function(r){ return r.correct; }).length;
+    var rows = quizRound.results.map(function(r){
+      var rec = state.srs[r.q.id];
+      var boxCls = rec.box === 0 ? "b0" : (rec.box < 3 ? "bmid" : "bhigh");
+      return '<tr><td>' + r.q.q + '</td><td class="' + (r.correct ? "ok" : "ng") + '">' + (r.correct ? "正解" : "不正解") + '</td>' +
+        '<td><span class="box-pill ' + boxCls + '">次回 ' + rec.due + '</span></td></tr>';
+    }).join("");
+    body.innerHTML = '<div class="panel site-summary">' +
+      '<p style="margin:0 0 6px; font-weight:700;">このラウンドの結果:' + correctCount + ' / ' + quizRound.pool.length + ' 問正解</p>' +
+      '<div class="table-scroll" style="overflow-x:auto;"><table class="round-summary-table"><thead><tr><th>設問</th><th>結果</th><th>次回復習日</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<button class="primary-btn accent" id="next-round-btn" style="margin-top:14px;">🔁 次のラウンドへ</button>' +
+    '</div>';
+    document.getElementById("next-round-btn").addEventListener("click", function(){
+      quizRound = null;
+      renderDueBanner();
+      renderQuiz();
+    });
+  }
 
   /* ========== 敷地診断シミュレーター ========== */
   var simSite = null;
@@ -642,11 +767,13 @@
   });
 
   document.getElementById("reset-btn").addEventListener("click", function(){
-    if (!confirm("進捗(レベル・XP・連続正解記録)をリセットします。よろしいですか?")) return;
+    if (!confirm("進捗(レベル・XP・連続正解記録・復習スケジュール)をリセットします。よろしいですか?")) return;
     localStorage.removeItem(STORAGE_KEY);
-    state = { xp:0, level:1, streak:0, bestStreak:0, quizOrder: shuffledIndices(QUIZ_QUESTIONS.length), quizPos:0, quizCorrectCount:0, quizAnswered:false };
+    state = { xp:0, level:1, streak:0, bestStreak:0, srs:{} };
     saveState();
     renderStatBar();
+    quizRound = null;
+    renderDueBanner();
     renderQuiz();
     simSite = null; simStep = 0; simAnswers = [];
     renderSim();
@@ -655,6 +782,7 @@
   /* ========== 初期化 ========== */
   loadState();
   renderStatBar();
+  renderDueBanner();
   renderQuiz();
   renderSim();
 })();
