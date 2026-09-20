@@ -327,8 +327,9 @@
     { name:"近隣商業地域",           kenpei:80, youseki:300, isResidential:false },
     { name:"商業地域",               kenpei:80, youseki:400, isResidential:false }
   ];
-  var ROAD_WIDTHS = [4, 5, 6, 8];
+  var ROAD_WIDTHS = [3, 4, 4, 5, 6, 8]; // 3m(狭あい道路)は少なめに出す
   var FIRE_ZONES = ["防火地域", "準防火地域", "指定なし", "指定なし"]; // 指定なしを出やすく
+  var MUNICIPALITIES = ["堺市", "堺市", "大阪市", "大阪府(堺市・大阪市以外)"]; // 堺市を出やすく(この会社の主戦場のため)
 
   function randInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
   function pick(arr){ return arr[randInt(0, arr.length-1)]; }
@@ -340,6 +341,7 @@
     var road = pick(ROAD_WIDTHS);
     var fire = pick(FIRE_ZONES);
     var units = randInt(8, 20);
+    var muni = pick(MUNICIPALITIES);
     var roadRatio = district.isResidential ? 0.4 : 0.6;
 
     var kenpeiLimit = Math.round(area * district.kenpei / 100);
@@ -369,11 +371,27 @@
       needsIro2 = "該当なし(準防火地域ではない)";
     }
 
+    // 堺市開発行為等の手続に関する条例第7条(協議対象:開発区域500㎡以上または住戸数10戸以上)
+    var sakaiKyogiTaisho = (area >= 500 || units >= 10);
+    // 大阪市:都市計画法29条の開発許可対象(開発区域500㎡以上)
+    var osakaShiKyokaTaisho = (area >= 500);
+    // 堺市宅地開発等に関する指導基準6:集会施設設置基準(住戸数65戸以上)
+    var shukaiShisetsuTaisho = (units >= 65);
+    // 堺市宅地開発等に関する指導基準:防犯灯設置基準(住戸数20戸以上「共同住宅を除く」)→共同住宅は常に対象外
+    // 堺市狭あい道路後退指導基準(幅員4m未満の道路=建築基準法42条2項道路が対象)
+    var kyoaiRoadTaisho = (road < 4);
+    // ボリュームチェック実務:想定戸数×想定専有面積(65㎡/戸と仮定)が延床上限に収まるか
+    var volumeAssumedArea = units * 65;
+    var volumeFits = (volumeAssumedArea <= yousekiLimit);
+
     return {
-      district: district, area: area, road: road, fire: fire, units: units, roadRatio: roadRatio,
+      district: district, area: area, road: road, fire: fire, units: units, muni: muni, roadRatio: roadRatio,
       kenpeiLimit: kenpeiLimit, yousekiByDesignated: yousekiByDesignated, yousekiByRoad: yousekiByRoad,
       yousekiLimit: yousekiLimit, stricter: stricter,
-      mokusankyoOK: mokusankyoOK, mokusankyoReason: mokusankyoReason, needsIro2: needsIro2
+      mokusankyoOK: mokusankyoOK, mokusankyoReason: mokusankyoReason, needsIro2: needsIro2,
+      sakaiKyogiTaisho: sakaiKyogiTaisho, osakaShiKyokaTaisho: osakaShiKyokaTaisho,
+      shukaiShisetsuTaisho: shukaiShisetsuTaisho, kyoaiRoadTaisho: kyoaiRoadTaisho,
+      volumeAssumedArea: volumeAssumedArea, volumeFits: volumeFits
     };
   }
 
@@ -587,38 +605,126 @@
   var simStep = 0; // 0..5 = 6問, 6 = まとめ
   var simAnswers = [];
 
+  var SIM_ROUND_SIZE = 10;
+
   var SIM_QUESTIONS = [
-    { key:"kenpei", label:"① 建築面積の上限は?(建蔽率から算定)", unit:"㎡",
+    /* ---- 建蔽率・容積率(建築基準法53条・52条) ---- */
+    { key:"kenpei", label:"建築面積の上限は?(建蔽率から算定)", unit:"㎡",
       getAnswer: function(s){ return s.kenpeiLimit; },
-      explainFn: function(s){ return "計算式: 敷地面積 " + s.area + "㎡ × 建蔽率 " + s.district.kenpei + "% = <code>" + s.kenpeiLimit + "㎡</code>"; } },
-    { key:"yousekiA", label:"② 容積率上限(指定容積率ベース)は?", unit:"㎡",
+      explainFn: function(s){ return "根拠:建築基準法53条。計算式: 敷地面積 " + s.area + "㎡ × 建蔽率 " + s.district.kenpei + "% = <code>" + s.kenpeiLimit + "㎡</code>"; } },
+    { key:"yousekiA", label:"容積率上限(指定容積率ベース)は?", unit:"㎡",
       getAnswer: function(s){ return s.yousekiByDesignated; },
-      explainFn: function(s){ return "計算式: 敷地面積 " + s.area + "㎡ × 指定容積率 " + s.district.youseki + "% = <code>" + s.yousekiByDesignated + "㎡</code>"; } },
-    { key:"yousekiB", label:"③ 容積率上限(前面道路幅員ベース)は?", unit:"㎡",
+      explainFn: function(s){ return "根拠:建築基準法52条1項。計算式: 敷地面積 " + s.area + "㎡ × 指定容積率 " + s.district.youseki + "% = <code>" + s.yousekiByDesignated + "㎡</code>"; } },
+    { key:"yousekiB", label:"容積率上限(前面道路幅員ベース)は?", unit:"㎡",
       getAnswer: function(s){ return s.yousekiByRoad; },
-      explainFn: function(s){ return "計算式: 前面道路幅員 " + s.road + "m × 係数 " + s.roadRatio + "(" + (s.district.isResidential ? "住居系用途地域" : "非住居系用途地域") + ") × 敷地面積 " + s.area + "㎡ = <code>" + s.yousekiByRoad + "㎡</code>"; } },
-    { key:"stricter", label:"④ 実際に採用される延床面積の上限は、②③のどちらが厳しい(小さい)?", unit:"select",
+      explainFn: function(s){ return "根拠:建築基準法52条2項。計算式: 前面道路幅員 " + s.road + "m × 係数 " + s.roadRatio + "(" + (s.district.isResidential ? "住居系用途地域" : "非住居系用途地域") + ") × 敷地面積 " + s.area + "㎡ = <code>" + s.yousekiByRoad + "㎡</code>"; } },
+    { key:"stricter", label:"実際に採用される延床面積の上限は、指定容積率ベースと道路幅員ベースのどちらが厳しい(小さい)?", unit:"select",
       options: ["指定容積率", "道路幅員ベース"],
       getAnswer: function(s){ return s.stricter; },
-      explainFn: function(s){ return "②(" + s.yousekiByDesignated + "㎡)と③(" + s.yousekiByRoad + "㎡)の<b>小さい方</b>(=より厳しい方)を採用します。この敷地では上限 <code>" + s.yousekiLimit + "㎡</code> です。"; } },
-    { key:"moku", label:"⑤ この敷地で木三共仕様(1時間準耐火)は使える可能性がある?", unit:"select",
+      explainFn: function(s){ return "指定容積率ベース(" + s.yousekiByDesignated + "㎡)と道路幅員ベース(" + s.yousekiByRoad + "㎡)の<b>小さい方</b>(=より厳しい方)を採用します。この敷地では上限 <code>" + s.yousekiLimit + "㎡</code> です。"; } },
+    { key:"kenpeiRelax", label:"建蔽率の緩和要因として挙げられるものは?", unit:"select",
+      options: ["角地緩和・防火地域内耐火建築物緩和", "容積率緩和・高さ制限緩和", "日影規制緩和・斜線緩和", "駐車場緩和・自転車置場緩和"],
+      getAnswer: function(){ return "角地緩和・防火地域内耐火建築物緩和"; },
+      explainFn: function(){ return "建築面積 ÷ 敷地面積が指定建蔽率(角地緩和・防火地域内耐火建築物緩和等を含む)以内かを確認します。"; } },
+    { key:"designatedKenpei", label:"この案件の用途地域の指定建蔽率は?", unit:"%",
+      getAnswer: function(s){ return s.district.kenpei; },
+      explainFn: function(s){ return "この案件の用途地域は「" + s.district.name + "」、指定建蔽率は <code>" + s.district.kenpei + "%</code> です(案件カードに表示されている数値)。"; } },
+    { key:"designatedYouseki", label:"この案件の用途地域の指定容積率は?", unit:"%",
+      getAnswer: function(s){ return s.district.youseki; },
+      explainFn: function(s){ return "この案件の用途地域は「" + s.district.name + "」、指定容積率は <code>" + s.district.youseki + "%</code> です(案件カードに表示されている数値)。"; } },
+    { key:"isResidential", label:"この案件の用途地域は「住居系用途地域」か?(前面道路幅員による容積率の係数0.4/0.6の判定根拠)", unit:"select",
+      options: ["住居系用途地域である(係数0.4)", "住居系用途地域ではない(係数0.6)"],
+      getAnswer: function(s){ return s.district.isResidential ? "住居系用途地域である(係数0.4)" : "住居系用途地域ではない(係数0.6)"; },
+      explainFn: function(s){ return s.district.name + "は" + (s.district.isResidential ? "住居系用途地域のため係数0.4を用います。" : "住居系用途地域ではない(商業系)ため係数0.6を用います。"); } },
+    { key:"volumeCheck", label:"想定戸数×想定専有面積(仮に65㎡/戸とする)で必要な延床面積を計算すると、延床面積の上限に収まるか?(ボリュームチェック実務)", unit:"select",
+      options: ["収まる", "収まらない"],
+      getAnswer: function(s){ return s.volumeFits ? "収まる" : "収まらない"; },
+      explainFn: function(s){ return "想定戸数" + s.units + "戸 × 65㎡/戸 = " + s.volumeAssumedArea + "㎡。延床上限" + s.yousekiLimit + "㎡と比較すると<code>" + (s.volumeFits ? "収まります" : "収まりません(戸数を減らすか専有面積を見直す必要あり)") + "</code>。実際のボリュームチェックでは複数プランを比較検討します。"; } },
+
+    /* ---- 木三共・防火(建築基準法27条) ---- */
+    { key:"moku", label:"この敷地で木三共仕様(1時間準耐火)は使える可能性がある?", unit:"select",
       options: ["使える可能性がある", "使えない"],
       getAnswer: function(s){ return s.mokusankyoOK ? "使える可能性がある" : "使えない"; },
-      explainFn: function(s){ return s.mokusankyoReason; } },
-    { key:"iro2", label:"⑥ 準防火地域で延床500㎡を超える場合に必要な追加構造は?", unit:"select",
+      explainFn: function(s){ return "根拠:建築基準法27条ただし書き。" + s.mokusankyoReason; } },
+    { key:"iro2", label:"準防火地域で延床500㎡を超える場合に必要な追加構造は?", unit:"select",
       options: ["必要(イ-2構造またはロ-2構造)", "不要(延床500㎡以下)", "該当なし(準防火地域ではない)"],
       getAnswer: function(s){ return s.needsIro2; },
       explainFn: function(s){
         if (s.fire === "準防火地域" && s.yousekiLimit > 500) return "この敷地は準防火地域内で延床上限が500㎡を超えるため、イ-2構造(45分準耐火)またはロ-2構造での設計が必要です。";
         if (s.fire === "準防火地域") return "この敷地は準防火地域内ですが延床上限が500㎡以下のため、追加構造の指定はありません。";
         return "この敷地は準防火地域ではない(" + s.fire + ")ため、この規定の対象外です。";
-      } }
+      } },
+    { key:"fireZonePerf", label:"この敷地(防火地域内)で、共同住宅を3階建てにする場合に原則必要な建築物の性能は?", unit:"select",
+      applicable: function(s){ return s.fire === "防火地域"; },
+      options: ["耐火建築物", "1時間準耐火建築物(木三共仕様)", "45分準耐火建築物", "制限なし"],
+      getAnswer: function(){ return "耐火建築物"; },
+      explainFn: function(){ return "防火地域内では建築基準法27条ただし書きの木三共仕様は使えず、原則として耐火建築物が必要です。"; } },
+
+    /* ---- 居室の性能(建築基準法28条等) ---- */
+    { key:"saiko", label:"この案件のような住宅の居室で、採光に必要な有効面積は床面積のどれくらい以上か?(条件により緩和あり)", unit:"select",
+      options: ["1/7以上(条件により1/10まで緩和)", "1/20以上", "1/50以上", "1/3以上"],
+      getAnswer: function(){ return "1/7以上(条件により1/10まで緩和)"; },
+      explainFn: function(){ return "根拠:建築基準法28条。住宅の居室は床面積の1/7以上(条件により1/10まで緩和)の採光有効面積が必要です。"; } },
+    { key:"kanki", label:"この案件のような住宅の居室で、自然換気に必要な開口部の割合は?", unit:"select",
+      options: ["床面積の1/20以上", "床面積の1/7以上", "床面積の1/50以上", "床面積の1/100以上"],
+      getAnswer: function(){ return "床面積の1/20以上"; },
+      explainFn: function(){ return "自然換気は開口部が床面積の1/20以上必要とされています。"; } },
+    { key:"haien", label:"この案件のような住宅の居室で、自然排煙に必要な有効開口の割合は?", unit:"select",
+      options: ["床面積の1/50以上", "床面積の1/7以上", "床面積の1/20以上", "床面積の1/10以上"],
+      getAnswer: function(){ return "床面積の1/50以上"; },
+      explainFn: function(){ return "排煙(自然)は有効開口が床面積の1/50以上必要とされています。"; } },
+    { key:"setsudo", label:"建築基準法43条の接道義務で、敷地が道路に接していなければならない長さの原則は?", unit:"select",
+      options: ["2m以上", "1m以上", "4m以上", "6m以上"],
+      getAnswer: function(){ return "2m以上"; },
+      explainFn: function(){ return "根拠:建築基準法43条。建築物の敷地は、原則として幅員4m以上の道路に2m以上接していなければなりません(接道義務)。"; } },
+
+    /* ---- 堺市の条例・指導基準 ---- */
+    { key:"sakaiKyogi", label:"この案件が堺市内にあると仮定した場合、堺市開発行為等の手続に関する条例第7条の協議対象になるか?(開発区域500㎡以上または住戸数10戸以上)", unit:"select",
+      applicable: function(s){ return s.muni === "堺市"; },
+      options: ["協議対象になる", "協議対象にならない"],
+      getAnswer: function(s){ return s.sakaiKyogiTaisho ? "協議対象になる" : "協議対象にならない"; },
+      explainFn: function(s){ return "敷地面積" + s.area + "㎡・想定戸数" + s.units + "戸。条例第7条は開発区域500㎡以上<b>または</b>住戸数10戸以上の集合建築物が対象のため、<code>" + (s.sakaiKyogiTaisho ? "協議対象になります" : "協議対象になりません") + "</code>。"; } },
+    { key:"sakaiShukai", label:"堺市宅地開発等に関する指導基準の集会施設設置基準(住戸数65戸以上が対象)に、この案件の想定戸数は該当するか?", unit:"select",
+      applicable: function(s){ return s.muni === "堺市"; },
+      options: ["該当する", "該当しない"],
+      getAnswer: function(s){ return s.shukaiShisetsuTaisho ? "該当する" : "該当しない"; },
+      explainFn: function(s){ return "想定戸数" + s.units + "戸。集会施設設置基準は住戸数65戸以上が対象のため、この案件は<code>" + (s.shukaiShisetsuTaisho ? "該当します" : "該当しません") + "</code>。"; } },
+    { key:"sakaiBohanto", label:"堺市宅地開発等に関する指導基準の防犯灯設置基準(住戸数20戸以上が対象)に、この案件(共同住宅)は該当するか?", unit:"select",
+      applicable: function(s){ return s.muni === "堺市"; },
+      options: ["該当しない(共同住宅は対象外)", "該当する"],
+      getAnswer: function(){ return "該当しない(共同住宅は対象外)"; },
+      explainFn: function(){ return "防犯灯設置基準は「開発区域の住戸数(共同住宅を除く)が20戸以上」が対象であり、共同住宅であるこの案件は戸数によらず対象外です。実務では見落としやすい注意点です。"; } },
+    { key:"kyoaiRoad", label:"この案件の前面道路幅員をもとに、堺市狭あい道路後退指導基準(幅員4m未満の道路が対象)の対象になるか判定すると?", unit:"select",
+      applicable: function(s){ return s.muni === "堺市"; },
+      options: ["対象になる(幅員4m未満)", "対象にならない(幅員4m以上)"],
+      getAnswer: function(s){ return s.kyoaiRoadTaisho ? "対象になる(幅員4m未満)" : "対象にならない(幅員4m以上)"; },
+      explainFn: function(s){ return "前面道路幅員" + s.road + "m。堺市狭あい道路後退指導基準は幅員4m未満の道路(建築基準法42条2項道路)が対象のため、<code>" + (s.kyoaiRoadTaisho ? "対象になります" : "対象になりません") + "</code>。"; } },
+
+    /* ---- 自治体別の開発許可制度 ---- */
+    { key:"osakaShiKyoka", label:"この案件が大阪市内にあると仮定した場合、都市計画法29条の開発許可対象になるか?(開発区域500㎡以上)", unit:"select",
+      applicable: function(s){ return s.muni === "大阪市"; },
+      options: ["開発許可対象になる", "開発許可対象にならない"],
+      getAnswer: function(s){ return s.osakaShiKyokaTaisho ? "開発許可対象になる" : "開発許可対象にならない"; },
+      explainFn: function(s){ return "敷地面積" + s.area + "㎡。大阪市では開発区域面積500㎡以上が原則対象のため、<code>" + (s.osakaShiKyokaTaisho ? "開発許可対象になります" : "開発許可対象になりません") + "</code>。"; } },
+    { key:"osakaFuSyokan", label:"この案件が大阪府(大阪市域外)にあると仮定した場合、開発許可・宅地造成等・違反建築の指導を所管する部署は?", unit:"select",
+      applicable: function(s){ return s.muni === "大阪府(堺市・大阪市以外)"; },
+      options: ["大阪府住宅建築局建築指導室", "大阪府都市整備部", "大阪市計画調整局開発調整部", "堺市建築安全課"],
+      getAnswer: function(){ return "大阪府住宅建築局建築指導室"; },
+      explainFn: function(){ return "大阪府(大阪市域外)では大阪府住宅建築局建築指導室が開発許可・宅地造成等・違反建築の指導を所管します。"; } },
+    { key:"kaihatsuKijun", label:"開発許可の審査基準にある「技術基準」と「立地基準」の違いは?", unit:"select",
+      options: ["技術基準は道路・公園・給排水施設等の整備水準、立地基準は市街化調整区域内での建築を制限する基準", "技術基準は建物の外観デザイン、立地基準は建物の色彩", "技術基準と立地基準は同じ内容を指す", "技術基準は木造のみ、立地基準はRC造のみに適用される"],
+      getAnswer: function(){ return "技術基準は道路・公園・給排水施設等の整備水準、立地基準は市街化調整区域内での建築を制限する基準"; },
+      explainFn: function(){ return "技術基準は道路・公園・給排水施設等の整備水準を定めたもの、立地基準は市街化調整区域内での建築を制限するものです。"; } }
   ];
 
   function fmtDistrict(s){ return s.district.name + "(建蔽率" + s.district.kenpei + "%・容積率" + s.district.youseki + "%)"; }
 
+  var simQuestionPool = []; // その案件で出題する設問(該当する設問をシャッフルして抽選)
+
   function startNewSite(){
     simSite = genSite();
+    var applicable = SIM_QUESTIONS.filter(function(qd){ return !qd.applicable || qd.applicable(simSite); });
+    simQuestionPool = shuffle(applicable).slice(0, Math.min(SIM_ROUND_SIZE, applicable.length));
     simStep = 0;
     simAnswers = [];
     renderSim();
@@ -634,6 +740,7 @@
           '<dt>用途地域</dt><dd>' + fmtDistrict(s) + '</dd>' +
           '<dt>防火指定</dt><dd>' + s.fire + '</dd>' +
           '<dt>想定戸数</dt><dd>' + s.units + ' 戸</dd>' +
+          '<dt>想定自治体</dt><dd>' + s.muni + '</dd>' +
         '</dl>' +
       '</div>';
   }
@@ -642,25 +749,25 @@
     var body = document.getElementById("sim-body");
     if (!simSite) {
       body.innerHTML = '<div class="panel" style="text-align:center;">' +
-        '<p style="color:var(--ink-soft); font-size:.9rem;">ボタンを押すと、架空の敷地条件(敷地面積・前面道路幅員・用途地域・防火指定・想定戸数)がランダムに生成されます。全6問の計算・判定に挑戦してください。</p>' +
+        '<p style="color:var(--ink-soft); font-size:.9rem;">ボタンを押すと、架空の敷地条件(敷地面積・前面道路幅員・用途地域・防火指定・想定戸数・想定自治体)がランダムに生成されます。全' + SIM_QUESTIONS.length + '問の設問バンク(建築基準法・堺市条例等)から、この案件に該当する設問を最大' + SIM_ROUND_SIZE + '問抽選して出題します。</p>' +
         '<button class="primary-btn accent" id="gen-site-btn">🎲 新しい案件を生成</button>' +
       '</div>';
       document.getElementById("gen-site-btn").addEventListener("click", startNewSite);
       return;
     }
 
-    if (simStep >= SIM_QUESTIONS.length) {
+    if (simStep >= simQuestionPool.length) {
       // まとめ画面
       var correctCount = simAnswers.filter(function(a){ return a.correct; }).length;
       var rows = simAnswers.map(function(a, i){
-        var qd = SIM_QUESTIONS[i];
-        return '<tr><td>' + qd.label.replace(/^[①-⑥]\s*/, "") + '</td><td class="' + (a.correct ? "ok" : "ng") + '">' + (a.correct ? "正解" : "不正解") + '</td><td>' + a.correctAnswer + (qd.unit === "㎡" ? "㎡" : "") + '</td></tr>';
+        var qd = simQuestionPool[i];
+        return '<tr><td>' + qd.label + '</td><td class="' + (a.correct ? "ok" : "ng") + '">' + (a.correct ? "正解" : "不正解") + '</td><td>' + a.correctAnswer + (qd.unit === "㎡" || qd.unit === "%" ? qd.unit : "") + '</td></tr>';
       }).join("");
       body.innerHTML = '' +
         renderSiteCard(simSite) +
         '<div class="panel site-summary">' +
-          '<p style="margin:0 0 6px; font-weight:700;">この案件の結果:' + correctCount + ' / ' + SIM_QUESTIONS.length + ' 問正解</p>' +
-          '<table><thead><tr><th>設問</th><th>結果</th><th>正答</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+          '<p style="margin:0 0 6px; font-weight:700;">この案件の結果:' + correctCount + ' / ' + simQuestionPool.length + ' 問正解</p>' +
+          '<div style="overflow-x:auto;"><table><thead><tr><th>設問</th><th>結果</th><th>正答</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
           '<button class="primary-btn accent" id="gen-site-btn2" style="margin-top:14px;">🎲 次の案件へ</button>' +
         '</div>';
       document.getElementById("gen-site-btn2").addEventListener("click", startNewSite);
@@ -668,11 +775,11 @@
       return;
     }
 
-    var qd = SIM_QUESTIONS[simStep];
+    var qd = simQuestionPool[simStep];
     var already = simAnswers[simStep];
     var html = renderSiteCard(simSite) +
       '<div class="panel">' +
-        '<div class="q-progress">設問 ' + (simStep+1) + ' / ' + SIM_QUESTIONS.length + '</div>' +
+        '<div class="q-progress">設問 ' + (simStep+1) + ' / ' + simQuestionPool.length + '</div>' +
         '<p class="q-text">' + qd.label + '</p>';
 
     if (qd.unit === "select") {
